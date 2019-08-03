@@ -58,8 +58,7 @@ class Map:
         self.routes = {}
         self.stops = {}
         self.stops_by_name = {}
-        self.routes_downloaded = False
-        self.stops_downloaded  = False
+        self.connecting_stops = set()
 
     def get(self, path='routes', query_key='type', keys='0,1'):
         '''Submits generic get requests to the API
@@ -80,7 +79,7 @@ class Map:
         message = json.loads(message)
         return message
 
-    def get_routes(self, overwrite=False, query_key='type', keys='0,1'):
+    def get_routes(self, query_key='type', keys='0,1'):
         '''Retrieves subway routes from the API
 
            Arguments:
@@ -89,39 +88,31 @@ class Map:
            query_key -- key for filtering routes
            keys -- values for filtering routes
         '''
-        if overwrite or not self.routes_downloaded:
-            self.routes = {}
-            routes_dic = self.get(path='routes', 
-                                  query_key=query_key, 
-                                  keys=keys)
-            for route in routes_dic['data']:
-                self.routes[route['id']] = Route(rid=route['id'], 
-                                                 long_name=route['attributes']['long_name'],
-                                                 short_name=route['attributes']['short_name'])
-            self.routes_downloaded = True
-            self.stops_downloaded  = False
+        routes_dic = self.get(path='routes', 
+                              query_key=query_key, 
+                              keys=keys)
+        for route in routes_dic['data']:
+            self.routes[route['id']] = Route(rid=route['id'], 
+                                             long_name=route['attributes']['long_name'],
+                                             short_name=route['attributes']['short_name'])            
 
-    def get_stops(self, overwrite=False):
-        '''Retrieves subway stops from the API
+    def get_stops(self):
+        '''Retrieves subway stops located across every route
 
            Arguments:
            overwrite -- flag to overwrite routes even if already downloaded
         '''
-        if overwrite or not self.stops_downloaded:
-            for route in self.routes:
-                route_stops = self.get(path='stops', query_key='route', keys=route)
-                for route_stop in route_stops['data']:
-                    if route_stop['id'] not in self.stops:                        
-                        stop_name = route_stop['attributes']['name']
-                        self.stops[route_stop['id']] = Stop(sid=route_stop['id'],
-                                                            name=stop_name)
-                        self.stops_by_name[stop_name] = route_stop['id']
-                    self.stops[route_stop['id']].parents.add(route)
-                    self.routes[route].stops.add(route_stop['id'])
-                    self.routes[route].nstops += 1
-
-            self.stops_downloaded = True
-
+        for route in self.routes:
+            route_stops = self.get(path='stops', query_key='route', keys=route)
+            for route_stop in route_stops['data']:
+                if route_stop['id'] not in self.stops:                        
+                    stop_name = route_stop['attributes']['name']
+                    self.stops[route_stop['id']] = Stop(sid=route_stop['id'],
+                                                        name=stop_name)
+                    self.stops_by_name[stop_name] = route_stop['id']
+                self.stops[route_stop['id']].parents.add(route)
+                self.routes[route].stops.add(route_stop['id'])
+                self.routes[route].nstops += 1
     
     def max_stops(self):
         '''Prints route with maximum number of subway stops
@@ -129,8 +120,6 @@ class Map:
            Returns:
            (route, nstops) -- route name, maximum number of stops
         '''
-        self.get_routes()
-        self.get_stops()
         max_stop_route = ''
         max_nstops = -1
         for route in self.routes:
@@ -146,8 +135,6 @@ class Map:
            Returns:
            (route, nstops) -- route name, maximum number of stops
         '''
-        self.get_routes()
-        self.get_stops()
         min_stop_route = ''
         min_nstops = sys.maxsize
         for route in self.routes:
@@ -160,10 +147,9 @@ class Map:
     def calc_route_adjacency(self):
         '''Computes adjacency between routes and updates Route.neighbors and Stop.parents
         '''
-        self.get_routes()
-        self.get_stops()
         for stop in self.stops:
             if len(self.stops[stop].parents) > 1 :
+                self.connecting_stops.add(stop)
                 for parent in self.stops[stop].parents:
                     other_parents = self.stops[stop].parents - {parent}
                     self.routes[parent].neighbors.update(other_parents)            
@@ -210,16 +196,12 @@ class Map:
         return trip
                 
     def print_routes(self):
-        self.get_routes()
         for route in self.routes:
             print(self.routes[route])
         
     def print_connecting_stops(self):
-        self.get_routes()
-        self.get_stops()
-        for stop in self.stops:
-            if len(self.stops[stop].parents) > 1:
-                print(self.stops[stop].name + ' --> ' + ', '.join(self.stops[stop].parents))
+        for stop in self.connecting_stops:
+            print(self.stops[stop].name + ' --> ' + ', '.join(self.stops[stop].parents))
 
 
 if __name__ == '__main__':
@@ -233,6 +215,7 @@ if __name__ == '__main__':
     print("======================================")
     print("=========QUESTION 2a==================")
     print("======================================")
+    m.get_stops()
     route, n = m.max_stops()
     print('Route %s has the maximum number of stops: %d' % (route, n)) 
     route, n = m.min_stops()
@@ -240,8 +223,8 @@ if __name__ == '__main__':
     print("======================================")
     print("=========QUESTION 2b==================")
     print("======================================")
+    m.calc_route_adjacency()    
     m.print_connecting_stops()
-    m.calc_route_adjacency()
     print("======================================")
     print("=========QUESTION 3===================")
     print("======================================")

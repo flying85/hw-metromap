@@ -36,8 +36,6 @@ class TestMap(unittest.TestCase):
         self.assertFalse(self.m.routes)
         self.assertFalse(self.m.stops)
         self.assertFalse(self.m.stops_by_name)
-        self.assertFalse(self.m.routes_downloaded)
-        self.assertFalse(self.m.stops_downloaded)
     
     def test_get(self):
         dd = self.m.get(path='routes', query_key='id', keys='Red,Green-B')
