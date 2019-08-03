@@ -40,16 +40,15 @@ Green Line B
 ## Question 2
 
 For the second question, we are required to explore the stops
-located along each subway route. We then defined a help
-class, ```Stop```, to store subway stop information.
+located along each subway route. We then defined the
+```Stop``` class to store subway stop information.
 ```Stop``` instances have a ```parents``` attribute, which stores the
-set of route(s) that travel through the ```Stop``` instance. 
+set of route(s) traveling through a ```Stop``` instance. 
 
-Interaction with the API to retrieve subway stop information occurs
-again through the ```Map``` class, and in particular via the
-```get_stops()``` method. ```get_stops()``` downloads information for
-all the subway stops located along each of the already downloaded
-routes. 
+Interaction with the API for subway stops occurs through 
+```get_stops()``` method of the ```Map``` class. ```get_stops()```
+downloads information for all the subway stops located along each of
+the already downloaded routes. 
 
 Two helper methods, ```max_stops()``` and ```min_stops()``` find the
 routes with the maximum and minimum number of stops, as requested by
@@ -94,14 +93,15 @@ to a given destination stop. The method ```calc_route_adjacency()```
 reformulates the information on stops connecting multiple
 subway lines in the form of subway adjacency. In other words, the
 ```neighbors``` attribute of each ```route``` instance is filled 
-with subway lines that are accessible with at most one trip (from
-start to connecting stop). The method ```trip_between_stops()``` 
-uses the adjacency information to progressively "touch" all subway
+with subway lines that are accessible with at most one trip (i.e.,
+from start stop to connecting stop). The method
+```trip_between_stops()``` uses the adjacency information to
+progressively "visit" all subway 
 routes that are reachable from the starting stop. The code
-makes sure that no subway line is reached only once. The code also
-stores the path followed to reach of the lines, which can be then
-rendered "backwards" to answer the assignment. Example output from
-terminal for Question 3:
+makes sure that all subway lines are "visited" only once. 
+The code also stores the path followed to reach each of the lines, 
+which can be then rendered "backwards" to answer the assignment. 
+Example output from terminal for Question 3:
 ```
 ======================================
 =========QUESTION 3===================
