@@ -2,8 +2,8 @@
 
 For the assignment, we provide two main exectuable files:
 
-- ```metromap.py```, which contains the source code and when executed
-  prints answers to all the assignment questions
+- ```metromap.py```, which contains source code and prints answers
+  when executed,
   
 - ```tests.py```, which provides test classes and executes tests 
 when called interactively. 
@@ -15,14 +15,15 @@ might require python3 due to ```urllib```.
 
 For the first part of the assignment, we use the ```Map``` class,
 which we designed to interact with the MBTA API. Among its 
-attributes, ```Map``` accounts also for ```routes```, a 
+attributes, ```Map``` accounts for ```routes```, a 
 dictionary of all the subway routes of interest. The method
-```get_routes()``` then composes the API request for ```routes```
-through the more general ```get()``` method, which also accepts
+```get_routes()``` composes the API request for ```routes```
+through the ```get()``` method, which also accepts
 arguments for the API filters. By default, ```get_routes()```
-downloads the routes of type ```0``` and ```1``` as requested by the
-assignment. Answer to Question 1 from terminal output:
+downloads the routes of type ```0``` and ```1```, as requested by the
+assignment. 
 
+Answer to Question 1 from terminal output:
 ```
 ======================================
 =========QUESTION 1===================
@@ -45,14 +46,16 @@ located along each subway route. We then defined the
 ```Stop``` instances have a ```parents``` attribute, which stores the
 set of route(s) traveling through a ```Stop``` instance. 
 
-Interaction with the API for subway stops occurs through 
+Interaction with the API for subway stops occurs through the 
 ```get_stops()``` method of the ```Map``` class. ```get_stops()```
 downloads information for all the subway stops located along each of
-the already downloaded routes. 
+the downloaded routes. 
 
 Two helper methods, ```max_stops()``` and ```min_stops()``` find the
 routes with the maximum and minimum number of stops, as requested by
-the assignment. Answer to the first part of Question 2 from terminal
+the assignment. 
+
+Answer to the first part of Question 2 from terminal
 output: 
 ```
 ======================================
@@ -65,8 +68,9 @@ Route Mattapan has the minimum number of stops: 8
 A third helper method, ```print_connecting_stops()```, outputs to
 terminal the subway stops that are crossed by at least two subway
 routes (i.e., those with a ```parents``` set with more than one
-element), as requested by the assignment. Answer to the second part 
-of Question 2 from terminal output:
+element), as requested by the assignment. 
+
+Answer to the second part of Question 2 from terminal output:
 ```
 ======================================
 =========QUESTION 2b==================
@@ -93,7 +97,7 @@ to a given destination stop. The method ```calc_route_adjacency()```
 reformulates the information on stops connecting multiple
 subway lines in the form of subway adjacency. In other words, the
 ```neighbors``` attribute of each ```route``` instance is filled 
-with subway lines that are accessible with at most one trip (i.e.,
+with subway lines that are reachable by a single ride at most (i.e.,
 from start stop to connecting stop). The method
 ```trip_between_stops()``` uses the adjacency information to
 progressively "visit" all subway 
@@ -101,6 +105,7 @@ routes that are reachable from the starting stop. The code
 makes sure that all subway lines are "visited" only once. 
 The code also stores the path followed to reach each of the lines, 
 which can be then rendered "backwards" to answer the assignment. 
+
 Example output from terminal for Question 3:
 ```
 ======================================
