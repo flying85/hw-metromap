@@ -160,6 +160,14 @@ class Map:
                     self.routes[parent].neighbors.update(other_parents)   
 
     def stop_id_from_name(self, stop_name):
+        '''Looks up name of a stop, and provides plausible alternatives if not found
+        
+        Arguments:
+        stop_name -- name of the subway stop to look up
+        
+        Returns:
+        stop_id -- id of the stop
+        '''
         try:
             stop_id = self.stops_by_name[stop_name]
             return stop_id
@@ -170,7 +178,7 @@ class Map:
             closest_names = difflib.get_close_matches(stop_name, 
                                                       self.stops_by_name.keys(),
                                                       cutoff=0.3)            
-            print('Please update the stop name and retry (use --src_dest_stops)')
+            print('Please update the stop name and retry (e.g., use --src_dest_stops)')
             print('Similar names: ' + ', '.join(closest_names))
             sys.exit()
             

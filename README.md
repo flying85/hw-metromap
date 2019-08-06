@@ -25,8 +25,8 @@ dictionary of all the subway routes of interest. The method
 through the ```get()``` method, which also accepts
 arguments for the API filters. By default, ```get_routes()```
 downloads the routes of type ```0``` and ```1```, as requested by the
-assignment. We opted to filter the routes on the server side to maintain
-message size smaller, and to leverage the likely better filtering performance 
+assignment. We filter the routes on the server side to maintain
+message size smaller, and to leverage the performant filtering
 of the database software the API is interfaced to.
 
 Answer to Question 1 from terminal output:
@@ -99,7 +99,7 @@ State --> Blue, Orange
 
 For the final part of the assignment, we are requested to find a
 possible way for a subway user to travel from a given starting stop 
-to a given destination stop. First, we use the method 
+to a given destination stop. We use the method 
 ```calc_route_adjacency()``` to record the links between subway 
 routes that cross with each other at a connecting stop. More specifically,
 ```calc_route_adjacency()``` fills
