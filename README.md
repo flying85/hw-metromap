@@ -1,6 +1,6 @@
 # MBTA exploration
 
-For the assignment, we provide two main exectuable files:
+For the assignment, we provide two main exectuable Python files:
 
 - ```metromap.py```, which contains source code and prints answers
   when executed,
@@ -8,8 +8,12 @@ For the assignment, we provide two main exectuable files:
 - ```tests.py```, which provides test classes and executes tests 
 when called interactively. 
 
-The code _should_ not have any external dependencies, but it 
-might require python3 due to ```urllib```.
+```metromap.py``` provides a basic command line interface to eventually change default options. 
+A list of available command line arguments is accessible via ```./metromap.py --help```.
+For example, source and destination stop names for Question 3 can be modified using the 
+```--src_dest_stops``` flag. 
+
+The code _should_ not have any external dependencies other than Python, but it might require a relatively new version due to ```urllib```.
 
 ## Question 1
 
@@ -21,7 +25,9 @@ dictionary of all the subway routes of interest. The method
 through the ```get()``` method, which also accepts
 arguments for the API filters. By default, ```get_routes()```
 downloads the routes of type ```0``` and ```1```, as requested by the
-assignment. 
+assignment. We opted to filter the routes on the server side to maintain
+message size smaller, and to leverage the likely better filtering performance 
+of the database software the API is interfaced to.
 
 Answer to Question 1 from terminal output:
 ```
@@ -93,18 +99,22 @@ State --> Blue, Orange
 
 For the final part of the assignment, we are requested to find a
 possible way for a subway user to travel from a given starting stop 
-to a given destination stop. The method ```calc_route_adjacency()```
-reformulates the information on stops connecting multiple
-subway lines in the form of subway adjacency. In other words, the
-```neighbors``` attribute of each ```route``` instance is filled 
-with subway lines that are reachable by a single ride at most (i.e.,
-from start stop to connecting stop). The method
-```trip_between_stops()``` uses the adjacency information to
+to a given destination stop. First, we use the method 
+```calc_route_adjacency()``` to record the links between subway 
+routes that cross with each other at a connecting stop. More specifically,
+```calc_route_adjacency()``` fills
+the ```neighbors``` attribute of each ```route``` instance with the IDs 
+of crossing subway routes. Every route in ```neighbors```
+is reachable from the parent ```route``` by at most a single ride  (i.e.,
+from start stop to connecting stop). 
+
+The method ```trip_between_stops()``` uses the neighbor information to
 progressively "visit" all subway 
 routes that are reachable from the starting stop. The code
-makes sure that all subway lines are "visited" only once. 
-The code also stores the path followed to reach each of the lines, 
-which can be then rendered "backwards" to answer the assignment. 
+makes sure that all subway lines are "visited" only once, and terminates 
+the search once the destination route is reached. 
+The code stores the path followed to reach each of the subway routes, 
+which can be then "traveled backwards" to answer the assignment. 
 
 Example output from terminal for Question 3:
 ```
