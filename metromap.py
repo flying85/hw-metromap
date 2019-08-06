@@ -1,6 +1,8 @@
 import os
 import urllib.request
 from urllib.parse import urljoin
+import difflib
+import argparse
 import json
 import sys
 
@@ -17,7 +19,9 @@ class Stop:
         self.sid = sid
         self.name = name
         self.parents = set()
-        
+
+    def __repr__(self):
+        return self.name        
 
 class Route:
     '''Class to describe subway routes.
@@ -71,11 +75,17 @@ class Map:
            Returns:
            message -- dictionary constructed from JSON API response
         '''
-
-        url_path = [self.url, '%s?filter[%s]=%s' % (path, query_key, keys)]
+        
+        url_path = [self.url, '%s?filter[%s]=%s' % (path, query_key,
+                                                    keys)]        
         url_path = '/'.join(url_path)
-        response = urllib.request.urlopen(url_path)
-        message = response.read().decode('utf-8')
+        try:
+            response = urllib.request.urlopen(url_path)
+            message = response.read().decode('utf-8')
+        except:
+            print('ERROR connecting to API.')
+            print('Check your connection or wait if hit limit on API calls')
+            sys.exit()
         message = json.loads(message)
         return message
 
@@ -83,8 +93,6 @@ class Map:
         '''Retrieves subway routes from the API
 
            Arguments:
-           overwrite -- flag to overwrite routes even if already
-                        downloaded
            query_key -- key for filtering routes
            keys -- values for filtering routes
         '''
@@ -97,10 +105,7 @@ class Map:
                                              short_name=route['attributes']['short_name'])            
 
     def get_stops(self):
-        '''Retrieves subway stops located across every route
-
-           Arguments:
-           overwrite -- flag to overwrite routes even if already downloaded
+        '''Retrieves subway stops along every downloaded route
         '''
         for route in self.routes:
             route_stops = self.get(path='stops', query_key='route', keys=route)
@@ -152,7 +157,24 @@ class Map:
                 self.connecting_stops.add(stop)
                 for parent in self.stops[stop].parents:
                     other_parents = self.stops[stop].parents - {parent}
-                    self.routes[parent].neighbors.update(other_parents)            
+                    self.routes[parent].neighbors.update(other_parents)   
+
+    def stop_id_from_name(self, stop_name):
+        try:
+            stop_id = self.stops_by_name[stop_name]
+            return stop_id
+        except:
+            # Stop name is not in dictionary
+            # Propose closest key and exit
+            print('\nERROR:'+ stop_name + ' does not correspond to any of the stop names on record.') 
+            closest_names = difflib.get_close_matches(stop_name, 
+                                                      self.stops_by_name.keys(),
+                                                      cutoff=0.3)            
+            print('Please update the stop name and retry (use --src_dest_stops)')
+            print('Similar names: ' + ', '.join(closest_names))
+            sys.exit()
+            
+                    
    
 
     def trip_between_stops(self, src, dest):
@@ -165,10 +187,14 @@ class Map:
            Returns:
            trip -- list of metro routes from src to dest
         '''
-        src_id  = self.stops_by_name[src]
-        dest_id = self.stops_by_name[dest]
+        src_id  = self.stop_id_from_name(src)
+        dest_id = self.stop_id_from_name(dest)
         src_routes = self.stops[src_id].parents
-        dest_routes = self.stops[dest_id].parents        
+        dest_routes = self.stops[dest_id].parents   
+        if src_routes.intersection(dest_routes):
+            # If stops are on the same line just return it
+            trip = [src_routes.intersection(dest_routes).pop()]
+            return trip            
         src_route = src_routes.pop()    
         src_routes.add(src_route) 
         dest_route = dest_routes.pop()    
@@ -176,18 +202,22 @@ class Map:
         visited_routes = {src_route : 0}
         visited_from   = {src_route : None}           
         cur_routes = [src_route] 
+        found_dest = False
         i = 1
-        while cur_routes:            
+        while cur_routes and not(found_dest):            
             next_routes = []
             for cur_route in cur_routes:
+                if found_dest : break
                 for neighbor_route in self.routes[cur_route].neighbors:                    
                     if neighbor_route not in visited_routes:
                         visited_routes[neighbor_route] = i
                         visited_from[neighbor_route] = cur_route
                         next_routes.append(neighbor_route)
+                    if neighbor_route == dest_route:
+                        found_dest = True
+                        break                        
             cur_routes = next_routes
             i += 1
-
         trip = [dest_route]
         next_route = visited_from[dest_route]
         while next_route:
@@ -196,38 +226,89 @@ class Map:
         return trip
                 
     def print_routes(self):
-        for route in self.routes:
+        for route in sorted(self.routes):
             print(self.routes[route])
+
+    def print_stops(self):
+        for stop in sorted(self.stops):
+            print(self.stops[stop])
         
     def print_connecting_stops(self):
         for stop in self.connecting_stops:
-            print(self.stops[stop].name + ' --> ' + ', '.join(self.stops[stop].parents))
+            print(self.stops[stop].name + ' --> ' \
+                  + ', '.join(self.stops[stop].parents))
+
+
 
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser(description='\
+    Downloads Boston routes and stations. Suggests path\
+    between two subway stops.', 
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)     
+    parser.add_argument('--api_url', 
+                        default='https://api-v3.mbta.com',
+                        help='Root URL of API')   
+
+    parser.add_argument('--src_dest_stops', nargs=2, 
+                        help='Names of start and end stops',
+                        default=['Brookline Village', 
+                                 'Sullivan Square'])
+    
+    parser.add_argument('--print_stops', action='store_true',
+                        help='If provided, just prints\
+                        all subway stops and their ids')
+    
+    parser.add_argument('--print_routes', action='store_true',
+                        help='If provided, just prints all\
+                        subway routes')
+
+    parser.add_argument('--print_connecting_stops', 
+                        action='store_true',
+                        help='If provided, just prints all\
+                        connecting subway stops and their ids')
+    
+    args = parser.parse_args()
+    
     m = Map()
-    routes = m.get_routes()
-    print("======================================")
-    print("=========QUESTION 1===================")
-    print("======================================")
-    m.print_routes()
-    print("======================================")
-    print("=========QUESTION 2a==================")
-    print("======================================")
+    print("......Downloading from API ... ")
+    m.get_routes()    
     m.get_stops()
-    route, n = m.max_stops()
-    print('Route %s has the maximum number of stops: %d' % (route, n)) 
-    route, n = m.min_stops()
-    print('Route %s has the minimum number of stops: %d' % (route, n)) 
-    print("======================================")
-    print("=========QUESTION 2b==================")
-    print("======================================")
-    m.calc_route_adjacency()    
-    m.print_connecting_stops()
-    print("======================================")
-    print("=========QUESTION 3===================")
-    print("======================================")
-    trip = m.trip_between_stops('Brookline Village', 
-                                'Sullivan Square')
-    print('Brookline Village, Sullivan Square --> ' + ', '.join(trip))
+    print("......Downloading from API ... done")
+    if args.print_routes:
+        # Print just routes
+        m.print_routes()
+    elif args.print_stops:
+        # Print just stops
+        m.print_stops()
+    elif args.print_connecting_stops:
+        # Print just connecting stops
+        m.print_connecting_stops()
+    else:
+        # Solve all assignments
+        print("======================================")
+        print("=========QUESTION 1===================")
+        print("======================================")
+        m.print_routes()
+        print("======================================")
+        print("=========QUESTION 2a==================")
+        print("======================================")
+        route, n = m.max_stops()
+        print('Route %s has the maximum number of stops: %d' \
+              % (route, n)) 
+        route, n = m.min_stops()
+        print('Route %s has the minimum number of stops: %d' \
+              % (route, n)) 
+        print("======================================")
+        print("=========QUESTION 2b==================")
+        print("======================================")
+        m.calc_route_adjacency()    
+        m.print_connecting_stops()
+        print("======================================")
+        print("=========QUESTION 3===================")
+        print("======================================")
+        print("Plan trip between " + ' and '.join(args.src_dest_stops))
+        trip = m.trip_between_stops(*args.src_dest_stops)
+        print(', '.join(args.src_dest_stops) + ' --> ' \
+              + ', '.join(trip))
